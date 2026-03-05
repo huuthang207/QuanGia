@@ -71,9 +71,19 @@ function requireRightChannel(interaction, config) {
 }
 
 function requireAdmin(interaction) {
-  if (!interaction.memberPermissions?.has("Administrator")) {
-    return { ok: false, reason: "Chỉ Admin mới dùng được lệnh này." };
+  const adminRoleId = process.env.ADMIN_ROLE_ID;
+
+  // fallback: nếu chưa set role thì vẫn cho Administrator (tuỳ bạn)
+  const isAdminPerm = interaction.memberPermissions?.has("Administrator");
+
+  const hasRole = adminRoleId
+    ? interaction.member?.roles?.cache?.has(adminRoleId)
+    : false;
+
+  if (!hasRole && !isAdminPerm) {
+    return { ok: false, reason: "Bạn không có quyền dùng lệnh này." };
   }
+
   return { ok: true };
 }
 
@@ -109,7 +119,7 @@ async function updatePublicMessage(client) {
   const content = renderPublicContent(active, users, votes);
   const components = buildVoteComponents(active.id, !active.isOpen);
 
-  await msg.edit({ content, components }).catch(() => null);
+  await msg.edit({ content, components });
 }
 
 const client = new Client({
@@ -264,13 +274,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const users = store.getUsers();
     const userCheck = ensureUserActive(interaction, users);
-    if (!userCheck.ok)
-      return interaction.reply({ content: userCheck.reason, ephemeral: true });
+    if (!userCheck.ok) {
+      return interaction.reply({
+        content: userCheck.reason,
+        ephemeral: true,
+      });
+    }
 
     const choice = prefix === "bc_go" ? "GO" : "NOGO";
     const u = users[interaction.user.id];
 
-    // If not linked -> modal
+    // Chưa link -> mở modal ngay
     if (!u) {
       const modal = new ModalBuilder()
         .setCustomId(`bc_link_name:${sessionId}:${choice}`)
@@ -283,10 +297,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         .setRequired(true);
 
       modal.addComponents(new ActionRowBuilder().addComponents(input));
-      return interaction.showModal(modal);
+      await interaction.showModal(modal);
+      return;
     }
 
-    // linked -> write vote
+    // Đã link -> ack trước
+    await interaction.deferUpdate();
+
     const votes = store.getSessionVotes(sessionId);
     votes[interaction.user.id] = {
       choice,
@@ -300,9 +317,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     active.lastUpdateAt = store.nowIso();
     store.setActiveSession(active);
 
-    await interaction.deferUpdate(); // ack im lặng, không hiện gì
     await updatePublicMessage(client);
-    await updatePublicMessage(client);
+    return;
   }
 
   // ---------- Modal Submit ----------

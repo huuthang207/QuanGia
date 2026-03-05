@@ -11,12 +11,12 @@ function buildCommands() {
   const setchannel = new SlashCommandBuilder()
     .setName("setchannel")
     .setDescription("Set kênh cố định cho điểm danh bang chiến")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
   const diemdanh = new SlashCommandBuilder()
     .setName("diemdanhbangchien")
     .setDescription("Mở/đóng điểm danh bang chiến")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand((sc) =>
       sc
         .setName("open")
