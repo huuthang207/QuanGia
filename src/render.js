@@ -56,15 +56,13 @@ function renderPublicContent(activeSession, users, votes) {
     `## ${header}`,
     statusLine,
     "",
-    `📊 **Tổng vote:** ${totalCount} | ✅ **Tham gia:** ${goCount} | ❌ **Không tham gia:** ${nogoCount}`,
-    "",
+    `📊 **Tổng vote:** ${totalCount} | ✅ **:** ${goCount} | ❌ **:** ${nogoCount}`,
     "**Danh sách tham gia:**",
     goBlock,
-    "",
     "**Danh sách không tham gia:**",
     nogoBlock,
+    `Last update: **${lastUpdate}**`,
     "",
-    `🕒 Last update: **${lastUpdate}**`,
   ].join("\n");
 }
 
