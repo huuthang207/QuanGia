@@ -163,7 +163,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ content: chCheck.reason, ephemeral: true });
 
       const sub = interaction.options.getSubcommand();
+      if (sub === "refresh") {
+        const active = store.getActiveSession();
+        if (!active) {
+          return interaction.reply({
+            content: "⚠️ Hiện không có đợt điểm danh nào để render lại.",
+            ephemeral: true,
+          });
+        }
 
+        await updatePublicMessage(client);
+
+        return interaction.reply({
+          content: "🔄 Đã render lại message điểm danh.",
+          ephemeral: true,
+        });
+      }
       if (sub === "open") {
         const customText = interaction.options.getString("text", true);
 

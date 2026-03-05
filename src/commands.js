@@ -28,8 +28,11 @@ function buildCommands() {
             .setRequired(false),
         ),
     )
+    .addSubcommand((sc) => sc.setName("close").setDescription("Đóng điểm danh"))
     .addSubcommand((sc) =>
-      sc.setName("close").setDescription("Đóng điểm danh"),
+      sc
+        .setName("refresh")
+        .setDescription("Render lại message điểm danh hiện tại"),
     );
 
   const capnhat = new SlashCommandBuilder()
