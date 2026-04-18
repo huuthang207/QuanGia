@@ -21,6 +21,7 @@ const PHAI_OPTIONS = [
   "Cửu Linh",
   "Thần Tương",
   "Tố Vấn",
+  "Long Ngâm",
 ];
 
 function isWrongGuild(interaction) {
@@ -87,6 +88,20 @@ function requireAdmin(interaction) {
   return { ok: true };
 }
 
+function requireBangVien(interaction) {
+  const roleId = process.env.BANG_VIEN_ROLE_ID;
+  if (!roleId) return { ok: false, reason: "Chưa cấu hình BANG_VIEN_ROLE_ID." };
+
+  const hasRole = interaction.member?.roles?.cache?.has(roleId);
+  if (!hasRole)
+    return {
+      ok: false,
+      reason: "Bạn không có role **Bang Viên** nên không dùng được lệnh này.",
+    };
+
+  return { ok: true };
+}
+
 function ensureUserActive(interaction, users) {
   const u = users[interaction.user.id];
   if (u && u.status === "INACTIVE") {
@@ -141,9 +156,45 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // ---------- Slash Commands ----------
   if (interaction.isChatInputCommand()) {
+    // ✅ /capnhatnhanvat: Bang Viên dùng được (không yêu cầu Admin)
+    if (interaction.commandName === "capnhatnhanvat") {
+      const bvCheck = requireBangVien(interaction);
+      if (!bvCheck.ok) {
+        return interaction.reply({ content: bvCheck.reason, ephemeral: true });
+      }
+
+      const users = store.getUsers();
+      const u = users[interaction.user.id];
+
+      // INACTIVE không cho dùng
+      if (u && u.status === "INACTIVE") {
+        return interaction.reply({
+          content: "Bạn đang **INACTIVE**. Vui lòng liên hệ admin.",
+          ephemeral: true,
+        });
+      }
+
+      const modal = new ModalBuilder()
+        .setCustomId("char_update_name")
+        .setTitle("Cập nhật nhân vật");
+
+      const input = new TextInputBuilder()
+        .setCustomId("ingameName")
+        .setLabel("Ingame Name")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setValue(u?.ingameName ?? "");
+
+      modal.addComponents(new ActionRowBuilder().addComponents(input));
+      await interaction.showModal(modal);
+      return;
+    }
+
+    // ✅ Các lệnh còn lại: chỉ Admin
     const adminCheck = requireAdmin(interaction);
-    if (!adminCheck.ok)
+    if (!adminCheck.ok) {
       return interaction.reply({ content: adminCheck.reason, ephemeral: true });
+    }
 
     if (interaction.commandName === "setchannel") {
       store.setConfig({
@@ -159,10 +210,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.commandName === "diemdanhbangchien") {
       const chCheck = requireRightChannel(interaction, config);
-      if (!chCheck.ok)
+      if (!chCheck.ok) {
         return interaction.reply({ content: chCheck.reason, ephemeral: true });
+      }
 
       const sub = interaction.options.getSubcommand();
+
       if (sub === "refresh") {
         const active = store.getActiveSession();
         if (!active) {
@@ -171,14 +224,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
             ephemeral: true,
           });
         }
-
         await updatePublicMessage(client);
-
         return interaction.reply({
           content: "🔄 Đã render lại message điểm danh.",
           ephemeral: true,
         });
       }
+
       if (sub === "open") {
         const customText = interaction.options.getString("text", true);
 
@@ -241,32 +293,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
           ephemeral: true,
         });
       }
-    }
-    if (interaction.commandName === "capnhatnhanvat") {
-      const users = store.getUsers();
-      const u = users[interaction.user.id];
-
-      // INACTIVE không cho dùng
-      if (u && u.status === "INACTIVE") {
-        return interaction.reply({
-          content: "Bạn đang **INACTIVE**. Vui lòng liên hệ admin.",
-          ephemeral: true,
-        });
-      }
-
-      const modal = new ModalBuilder()
-        .setCustomId("char_update_name")
-        .setTitle("Cập nhật nhân vật");
-
-      const input = new TextInputBuilder()
-        .setCustomId("ingameName")
-        .setLabel("Ingame Name")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setValue(u?.ingameName ?? "");
-
-      modal.addComponents(new ActionRowBuilder().addComponents(input));
-      return interaction.showModal(modal);
     }
   }
 
