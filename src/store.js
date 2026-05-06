@@ -46,7 +46,10 @@ function nowIso() {
 
 // -------------------- CONFIG --------------------
 function getConfig() {
-  return readJson(CONFIG_PATH, { guildId: process.env.GUILD_ID, channelId: null });
+  return readJson(CONFIG_PATH, {
+    guildId: process.env.GUILD_ID,
+    channelId: null,
+  });
 }
 function setConfig(next) {
   writeJsonAtomic(CONFIG_PATH, next);
@@ -137,7 +140,8 @@ function migrateFromLegacyIfNeeded() {
     fs.existsSync(PENDING_LINK_PATH);
 
   if (hasNew) return { migrated: false, reason: "New storage already exists." };
-  if (!fs.existsSync(LEGACY_DB_PATH)) return { migrated: false, reason: "No legacy db.json found." };
+  if (!fs.existsSync(LEGACY_DB_PATH))
+    return { migrated: false, reason: "No legacy db.json found." };
 
   const legacy = readJson(LEGACY_DB_PATH, null);
   if (!legacy) return { migrated: false, reason: "Legacy db.json unreadable." };

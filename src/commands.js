@@ -60,7 +60,10 @@ async function deployCommands() {
   console.log("✅ Deployed guild commands.");
 }
 
-deployCommands().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  deployCommands().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+module.exports = { deployCommands };

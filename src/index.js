@@ -35,12 +35,20 @@ function buildVoteComponents(sessionId, disabled = false) {
       .setLabel("Tham gia ✅")
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled),
+
+    new ButtonBuilder()
+      .setCustomId(`bc_maybe:${sessionId}`)
+      .setLabel("Dự Bị 📝")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(disabled),
+
     new ButtonBuilder()
       .setCustomId(`bc_nogo:${sessionId}`)
       .setLabel("Không tham gia ❌")
       .setStyle(ButtonStyle.Danger)
       .setDisabled(disabled),
   );
+
   return [row];
 }
 function buildUpdatePhaiSelectComponents() {
@@ -303,7 +311,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // ---------- Buttons ----------
   if (interaction.isButton()) {
     const [prefix, sessionId] = interaction.customId.split(":");
-    if (prefix !== "bc_go" && prefix !== "bc_nogo") return;
+    if (prefix !== "bc_go" && prefix !== "bc_nogo" && prefix !== "bc_maybe")
+      return;
 
     const active = store.getActiveSession();
     if (!active || !active.isOpen || active.id !== sessionId) {
@@ -322,7 +331,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     }
 
-    const choice = prefix === "bc_go" ? "GO" : "NOGO";
+    const choice =
+      prefix === "bc_go" ? "GO" : prefix === "bc_nogo" ? "NOGO" : "MAYBE";
     const u = users[interaction.user.id];
 
     // Chưa link -> mở modal ngay

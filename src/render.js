@@ -1,20 +1,16 @@
-function buildVoteEntries(votes, users, choice) {
-  return Object.entries(votes || {})
+// src/render.js
+
+function renderListByChoice(votes, users, choice, emptyText) {
+  const entries = Object.entries(votes || {})
     .filter(([, v]) => v.choice === choice)
     .map(([discordId, v]) => ({
-      discordId,
       ingameName:
-        v.snapshot?.ingameName ?? users[discordId]?.ingameName ?? "Unknown",
-      phai: v.snapshot?.phai ?? users[discordId]?.phai ?? "Unknown",
-      updatedAt: v.updatedAt,
+        v.snapshot?.ingameName ?? users?.[discordId]?.ingameName ?? "Unknown",
+      phai: v.snapshot?.phai ?? users?.[discordId]?.phai ?? "Unknown",
     }))
-    .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
-}
+    .sort((a, b) => (a.ingameName || "").localeCompare(b.ingameName || ""));
 
-function renderVoteBlock(entries, emptyText) {
-  if (entries.length === 0) {
-    return `\`\`\`txt\n${emptyText}\n\`\`\``;
-  }
+  if (entries.length === 0) return `\`\`\`txt\n${emptyText}\n\`\`\``;
 
   const lines = entries.map(
     (e, idx) => `${idx + 1}. ${e.ingameName} - ${e.phai}`,
@@ -22,47 +18,70 @@ function renderVoteBlock(entries, emptyText) {
   return "```txt\n" + lines.join("\n") + "\n```";
 }
 
-function countVotes(votes) {
-  const entries = Object.values(votes || {});
-  const goCount = entries.filter((v) => v.choice === "GO").length;
-  const nogoCount = entries.filter((v) => v.choice === "NOGO").length;
-  const totalCount = entries.length;
+function countChoices(votes) {
+  let go = 0,
+    maybe = 0,
+    nogo = 0;
+  for (const v of Object.values(votes || {})) {
+    if (v.choice === "GO") go++;
+    else if (v.choice === "MAYBE") maybe++;
+    else if (v.choice === "NOGO") nogo++;
+  }
+  const totalVote = go + maybe + nogo;
+  return { go, maybe, nogo, totalVote };
+}
 
-  return { goCount, nogoCount, totalCount };
+function renderVoteSummaryCodeblock({ totalVote, go, maybe, nogo }) {
+  return [
+    "```txt",
+    `📊 Tổng vote: ${totalVote}`,
+    `✅ Tham gia: ${go}`,
+    `❔ Dự bị: ${maybe}`,
+    `❌ Không tham gia: ${nogo}`,
+    "```",
+  ].join("\n");
 }
 
 function renderPublicContent(activeSession, users, votes) {
-  const goEntries = buildVoteEntries(votes, users, "GO");
-  const nogoEntries = buildVoteEntries(votes, users, "NOGO");
-
-  const goBlock = renderVoteBlock(goEntries, "Chưa có ai đăng ký tham gia.");
-  const nogoBlock = renderVoteBlock(
-    nogoEntries,
-    "Chưa có ai chọn không tham gia.",
-  );
-
-  const lastUpdate = activeSession?.lastUpdateAt
-    ? new Date(activeSession.lastUpdateAt).toLocaleString("vi-VN")
-    : "-";
+  const header = activeSession?.headerText?.trim() || "Điểm danh Bang Chiến";
 
   const statusLine = activeSession?.isOpen
     ? "🟢 **Đang mở điểm danh**"
     : "🔒 **Đã đóng điểm danh**";
 
-  const header = activeSession?.headerText?.trim() || "Điểm danh Bang Chiến";
-  const { goCount, nogoCount, totalCount } = countVotes(votes);
+  const lastUpdate = activeSession?.lastUpdateAt
+    ? new Date(activeSession.lastUpdateAt).toLocaleString("vi-VN")
+    : "-";
+
+  const counts = countChoices(votes);
+  const voteBlock = renderVoteSummaryCodeblock(counts);
+
+  const goBlock = renderListByChoice(votes, users, "GO", "Chưa có ai đăng ký.");
+  const maybeBlock = renderListByChoice(
+    votes,
+    users,
+    "MAYBE",
+    "Chưa có ai chọn 'Dự bị'.",
+  );
+  const nogoBlock = renderListByChoice(
+    votes,
+    users,
+    "NOGO",
+    "Chưa có ai chọn 'Không tham gia'.",
+  );
 
   return [
     `## ${header}`,
     statusLine,
     "",
-    `📊 **Tổng vote:** ${totalCount} | ✅ **:** ${goCount} | ❌ **:** ${nogoCount}`,
+    voteBlock,
     "**Danh sách tham gia:**",
     goBlock,
-    "**Danh sách không tham gia:**",
+    "**Danh sách Dự bị:**",
+    maybeBlock,
+    "**Danh sách Không tham gia:**",
     nogoBlock,
-    `Last update: **${lastUpdate}**`,
-    "",
+    `**Cập nhật lần cuối:** **${lastUpdate}**`,
   ].join("\n");
 }
 
