@@ -1,4 +1,4 @@
-# QuanGia - Discord Bot Điểm Danh Bang Chiến
+# QuanGia - Discord Bot Hỗ Trợ Điểm Danh Bang Hội
 
 Bot Discord (discord.js gateway) dùng để **điểm danh tham gia Bang Chiến** trong 1 server duy nhất.  
 Admin mở/đóng đợt điểm danh, thành viên bấm tham gia/không tham gia. Bot lưu dữ liệu vào JSON và tự render danh sách công khai theo **môn phái**.
